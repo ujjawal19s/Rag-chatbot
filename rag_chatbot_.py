@@ -16,27 +16,17 @@ Original file is located at
 # Import necessary libraries after resolving conflicts and installing dependencies
 import numpy as np  # linear algebra
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
-from langchain.vectorstores import Chroma
-from langchain.embeddings.openai import OpenAIEmbeddings
-from langchain.document_loaders import PyPDFLoader
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.chat_models import ChatOpenAI
 from langchain.chains import RetrievalQA
 import bs4
-from langchain import hub
-from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.document_loaders import WebBaseLoader
-from langchain_community.vectorstores import Chroma
-from langchain_core.runnables import RunnablePassthrough
-from langchain.document_loaders import TextLoader
+
 from langchain.chains import RetrievalQA
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.schema import Document
 from transformers import pipeline
 from langchain import LLMChain
-from langchain.prompts import PromptTemplate
 from langchain.llms import HuggingFacePipeline
-from langchain.indexes import VectorstoreIndexCreator
 from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.chains import SimpleSequentialChain
@@ -47,7 +37,6 @@ from langchain.vectorstores import FAISS
 from langchain.embeddings import HuggingFaceEmbeddings
 from langchain.llms import HuggingFacePipeline
 from langchain.memory import ConversationBufferMemory
-from langchain.prompts import PromptTemplate
 from langchain.text_splitter import CharacterTextSplitter
 from langchain.schema import Document
 from langchain.docstore import InMemoryDocstore
@@ -92,8 +81,8 @@ rag_chain = RetrievalQA.from_chain_type(
     retriever=index.as_retriever()
 )
 
-response = rag_chain.run({"query": "Protection in respect of conviction for offences"})
-print(response)
+# response = rag_chain.run({"query": "Protection in respect of conviction for offences"})
+# print(response)
 
 embedded_docs = [(doc, embedding_model.embed_query(doc.page_content)) for doc in documents]
 doc_texts = [doc.page_content for doc in documents]
@@ -102,7 +91,6 @@ embeddings = [embedding_model.embed_query(text) for text in doc_texts]
 dimension = len(embeddings[0])
 index = faiss.IndexFlatL2(dimension)
 index.add(np.array(embeddings))
-
 
 docstore = InMemoryDocstore(dict(enumerate(documents)))
 vector_store = FAISS(embedding_function=embedding_model, index=index, docstore=docstore, index_to_docstore_id={i: i for i in range(len(documents))})
@@ -123,7 +111,6 @@ qa_chain = RetrievalQA.from_chain_type(
 # Attach memory buffer to the chain
 qa_chain.memory = memory
 
-
 def query_with_memory(query: str):
     result = qa_chain({"query": query})
     output_for_memory = {"result": result['result']}
@@ -132,50 +119,9 @@ def query_with_memory(query: str):
     print("Memory Buffer Content:", memory_content)
     return result
 
-
-query = "Prohibition of employment of children in factories, etc"
-response = query_with_memory(query)
-print("Response:", response['result'])
-
-
-import streamlit as st
+# query = "Prohibition of employment of children in factories, etc"
+# response = query_with_memory(query)
+# print("Response:", response['result'])
 
 
-st.set_page_config(page_title="Random Fortune Telling Bot")
-with st.sidebar:
-    st.title('Random Fortune Telling Bot')
-
-
-# Function for generating LLM response
-def generate_response(input):
-    result = query_with_memory(input)
-    return result
-
-
-# Store LLM generated responses
-if "messages" not in st.session_state.keys():
-    st.session_state.messages = [{"role": "assistant", "content": "Welcome, let's unveil your future"}]
-
-
-# Display chat messages
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.write(message["content"])
-
-
-# User-provided prompt
-if input := st.chat_input():
-    st.session_state.messages.append({"role": "user", "content": input})
-    with st.chat_message("user"):
-        st.write(input)
-
-
-# Generate a new response if last message is not from assistant
-if st.session_state.messages[-1]["role"] != "assistant":
-    with st.chat_message("assistant"):
-        with st.spinner("Getting your answer from mystery stuff.."):
-            response = generate_response(input)
-            st.write(response)
-    message = {"role": "assistant", "content": response}
-    st.session_state.messages.append(message)
 
